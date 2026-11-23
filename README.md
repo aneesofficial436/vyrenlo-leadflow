@@ -62,6 +62,10 @@ $env:LEADFLOW_DEMO_API_KEY = "lf_live_..."
 
 See previous sections in git history or [deployment.md](docs/deployment.md) for split API + `npm run dev` workflow.
 
+## Save to Cursor (Origin)
+
+Native Windows needs **WSL** for the `origin` CLI. See [docs/cursor-origin-push.md](docs/cursor-origin-push.md) and `scripts/push-to-cursor-origin.sh` (run inside WSL).
+
 ## CI
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — pytest (Postgres + Redis) + Next.js build.
