@@ -1,0 +1,37 @@
+{
+  "name": "LeadFlow 05 - Customer Response Detection",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "inbound-message", "options": {} },
+      "id": "05-wh",
+      "name": "Inbound Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "leadflow-inbound-message"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://api:8000/v1/internal/inbound-email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Service-Token", "value": "={{$env.LEADFLOW_SERVICE_TOKEN}}" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { tenant_id: $json.body.tenant_id, from_email: $json.body.from_email, subject: $json.body.subject, body: $json.body.body } }}"
+      },
+      "id": "05-api",
+      "name": "Record Inbound",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [280, 0]
+    }
+  ],
+  "connections": {
+    "Inbound Webhook": { "main": [[{ "node": "Record Inbound", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "LeadFlow 07 - Failed Workflow Recovery",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "07-err",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://api:8000/v1/internal/workflow-runs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Service-Token", "value": "={{$env.LEADFLOW_SERVICE_TOKEN}}" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { workflow_name: $json.workflow.name, status: 'failed', n8n_execution_id: $json.execution.id, error_message: $json.execution.error.message, payload: $json } }}"
+      },
+      "id": "07-log",
+      "name": "Log Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [280, 0]
+    }
+  ],
+  "connections": {
+    "Error Trigger": { "main": [[{ "node": "Log Failure", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

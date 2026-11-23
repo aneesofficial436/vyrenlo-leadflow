@@ -1,0 +1,102 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-leadflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-leadflow_dev_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-leadflow}
+    ports:
+      - "5432:5432"
+    volumes:
+      - leadflow_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-leadflow} -d ${POSTGRES_DB:-leadflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  n8n:
+    image: n8nio/n8n:1.70.3
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678/
+      GENERIC_TIMEZONE: UTC
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-change-me-n8n-encryption-key}
+    volumes:
+      - leadflow_n8n_data:/home/node/.n8n
+      - ../automation/n8n/workflows:/workflows:ro
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-leadflow}:${POSTGRES_PASSWORD:-leadflow_dev_change_me}@postgres:5432/${POSTGRES_DB:-leadflow}
+      REDIS_URL: redis://redis:6379/0
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      N8N_WEBHOOK_LEAD_CREATED: http://n8n:5678/webhook/lead-created
+      N8N_WEBHOOK_QUALIFICATION_COMPLETED: http://n8n:5678/webhook/qualification-completed
+      N8N_WEBHOOK_QUALIFICATION_FAILED: http://n8n:5678/webhook/qualification-failed
+      N8N_ORCHESTRATES_QUALIFICATION: ${N8N_ORCHESTRATES_QUALIFICATION:-false}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../apps/api:/app
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  web:
+    image: node:22-alpine
+    working_dir: /app
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../apps/web:/app
+      - web_node_modules:/app/node_modules
+    command: sh -c "npm install && npm run dev -- --hostname 0.0.0.0"
+    depends_on:
+      - api
+
+volumes:
+  leadflow_pg_data:
+  leadflow_n8n_data:
+  web_node_modules:

@@ -1,0 +1,37 @@
+{
+  "name": "LeadFlow 06 - Daily Sales Summary",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "0 8 * * *" }] } },
+      "id": "06-cron",
+      "name": "Daily 08:00 UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://api:8000/v1/internal/daily-summary",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [{ "name": "tenant_id", "value": "={{$env.LEADFLOW_DEMO_TENANT_ID}}" }]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Service-Token", "value": "={{$env.LEADFLOW_SERVICE_TOKEN}}" }]
+        }
+      },
+      "id": "06-summary",
+      "name": "Fetch Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [280, 0]
+    }
+  ],
+  "connections": {
+    "Daily 08:00 UTC": { "main": [[{ "node": "Fetch Summary", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

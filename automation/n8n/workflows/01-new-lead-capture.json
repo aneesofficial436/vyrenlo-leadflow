@@ -1,0 +1,50 @@
+{
+  "name": "LeadFlow 01 - New Lead Capture",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "lead-created", "options": {} },
+      "id": "01-wh",
+      "name": "Webhook Lead Created",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "leadflow-lead-created"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://api:8000/v1/internal/workflow-runs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Service-Token", "value": "={{$env.LEADFLOW_SERVICE_TOKEN}}" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { workflow_name: '01-new-lead-capture', status: 'running', tenant_id: $json.body.tenant_id, payload: $json.body } }}"
+      },
+      "id": "01-log",
+      "name": "Log Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [{ "value1": "={{$json.body.payload.duplicate}}", "operation": "notEqual", "value2": "true" }]
+        }
+      },
+      "id": "01-if",
+      "name": "Not Duplicate",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [520, 0]
+    }
+  ],
+  "connections": {
+    "Webhook Lead Created": { "main": [[{ "node": "Log Run", "type": "main", "index": 0 }]] },
+    "Log Run": { "main": [[{ "node": "Not Duplicate", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

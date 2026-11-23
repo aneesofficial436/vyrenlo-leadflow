@@ -1,0 +1,38 @@
+{
+  "name": "LeadFlow 02 - AI Lead Qualification",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "qualify-lead", "options": {} },
+      "id": "02-wh",
+      "name": "Webhook Qualify",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "leadflow-qualify-lead"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:8000/v1/internal/leads/{{$json.body.lead_id}}/qualify",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [{ "name": "tenant_id", "value": "={{$json.body.tenant_id}}" }]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Service-Token", "value": "={{$env.LEADFLOW_SERVICE_TOKEN}}" }]
+        }
+      },
+      "id": "02-http",
+      "name": "Qualify via API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [280, 0]
+    }
+  ],
+  "connections": {
+    "Webhook Qualify": { "main": [[{ "node": "Qualify via API", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

@@ -1,0 +1,51 @@
+{
+  "name": "LeadFlow 03 - Lead Notification",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "qualification-completed", "options": {} },
+      "id": "03-wh",
+      "name": "Webhook Qualification Completed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "leadflow-qualification-completed"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [{ "value1": "={{$json.body.payload.priority}}", "operation": "equal", "value2": "hot" }]
+        }
+      },
+      "id": "03-if",
+      "name": "Is Hot",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [280, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:8000/v1/internal/leads/{{$json.body.lead_id}}/staff-notify",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [{ "name": "tenant_id", "value": "={{$json.body.tenant_id}}" }]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Service-Token", "value": "={{$env.LEADFLOW_SERVICE_TOKEN}}" }]
+        }
+      },
+      "id": "03-notify",
+      "name": "Notify Staff",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, -80]
+    }
+  ],
+  "connections": {
+    "Webhook Qualification Completed": { "main": [[{ "node": "Is Hot", "type": "main", "index": 0 }]] },
+    "Is Hot": { "main": [[{ "node": "Notify Staff", "type": "main", "index": 0 }], []] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

@@ -1,0 +1,70 @@
+{
+  "name": "LeadFlow 04 - Follow-up Scheduler",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "hours", "hoursInterval": 1 }] } },
+      "id": "04-cron",
+      "name": "Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://api:8000/v1/internal/follow-ups/due",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "tenant_id", "value": "={{$env.LEADFLOW_DEMO_TENANT_ID}}" },
+            { "name": "limit", "value": "25" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Service-Token", "value": "={{$env.LEADFLOW_SERVICE_TOKEN}}" }]
+        },
+        "options": { "response": { "response": { "fullResponse": false } } }
+      },
+      "id": "04-list",
+      "name": "List Due Follow-ups",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 0]
+    },
+    {
+      "parameters": { "fieldToSplitOut": "={{ $json }}", "options": {} },
+      "id": "04-split",
+      "name": "Split Items",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [520, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://api:8000/v1/internal/leads/{{$json.lead_id}}/follow-ups/execute",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [{ "name": "tenant_id", "value": "={{$env.LEADFLOW_DEMO_TENANT_ID}}" }]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "X-Service-Token", "value": "={{$env.LEADFLOW_SERVICE_TOKEN}}" }]
+        }
+      },
+      "id": "04-exec",
+      "name": "Execute Follow-up",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [780, 0]
+    }
+  ],
+  "connections": {
+    "Every Hour": { "main": [[{ "node": "List Due Follow-ups", "type": "main", "index": 0 }]] },
+    "List Due Follow-ups": { "main": [[{ "node": "Split Items", "type": "main", "index": 0 }]] },
+    "Split Items": { "main": [[{ "node": "Execute Follow-up", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}
